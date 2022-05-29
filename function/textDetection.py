@@ -3,12 +3,12 @@ import numpy as np
 import pytesseract
 
 pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
-def textDetection(imageFile):
+def textDetection(imagePath):
     """
     초기화, initialization
     """
     textDict ={}#텍스트 좌료를 넣을 딕셔너리 선언
-    image = cv2.imread(imageFile)# 이미지 로드
+    image = cv2.imread(imagePath)# 이미지 로드
     originH = image.shape[0]#이미지 높이 저장
 
     """
@@ -20,14 +20,14 @@ def textDetection(imageFile):
     thresh = cv2.threshold(
         gray, 100, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
     clean = thresh.copy()
-    # sampleImg = image.copy()
+    sampleImg = image.copy()
 
     #오프닝
     open_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (1,1))
     opening = cv2.morphologyEx(clean, cv2.MORPH_OPEN, open_kernel, iterations=2)
 
     #클로즈
-    close_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (6,1))
+    close_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (8,1))
     close = cv2.morphologyEx(opening, cv2.MORPH_CLOSE, close_kernel, iterations=4)
 
     """
@@ -46,12 +46,14 @@ def textDetection(imageFile):
             #pytesseract로 텍스트 변환
             ROI = image[y:y+h, x:x+w]
             data = pytesseract.image_to_string(ROI, lang='kor',config='--psm 6')
+            
             #변환된 텍스트의 값이 존재할 경우 그 값을 저장한다.
+            cv2.rectangle(sampleImg, (x, y), (x + w, y + h), (36,255,12), 2)
             if(len(data) != 0):          
                 textDict[data] = [[x,y], [x + w, y + h]]
-                # cv2.rectangle(sampleImg, (x, y), (x + w, y + h), (36,255,12), 2)
+                cv2.rectangle(sampleImg, (x, y), (x + w, y + h), (36,255,12), 2)
                 
-    # cv2.imshow("sample", sampleImg)
+    cv2.imwrite("./result/sample.png", sampleImg)
     cv2.imwrite('./result/image.png', image)
     cv2.imwrite('./result/clean.png', clean)
     cv2.imwrite('./result/close.png', close)
