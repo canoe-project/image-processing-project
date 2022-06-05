@@ -10,6 +10,7 @@ from tkinter import filedialog
 
 from function.textDetection import textDetection
 from function.mosaic import imageMosaic
+from function.faceMosaic import profile_moszic
 
 #임시저장 경로
 
@@ -38,7 +39,7 @@ def img_upload(event):
     global before_img
 
     filename = filedialog.askopenfilename(initialdir='', title='파일선택', filetypes=(
-                                                    ('png files', '*.png'), ('jpg files', '*.jpg'), ('all files', '*.*')))
+                                                    ('all files', '*.*'), ('jpg files', '*.jpg'), ('png files', '*.png')))
     path = filename
     before_src = cv2.imread(filename)
     before_img = cv2.cvtColor(before_src, cv2.COLOR_RGB2BGR)
@@ -79,13 +80,24 @@ def findtext(event):
 
 def setText(dictionary_key):
     global dictionary
+    global after_src
+    global after_img
     #여기서 받아온 딕션어리 키 값으로 콤보 박스 세팅할 예정
-    print('눌림')
     after_text_mosaic_combobox.configure(values = dictionary_key)
+    #눌렸으니 이제 after이미지에서 작업할 수 있도록 사진 옮기기
+    after_src = cv2.imread(path)
+    after_img = cv2.resize(after_src, (320,200))
+    after_img = cv2.cvtColor(after_img, cv2.COLOR_RGB2BGR)
+    after_img = Image.fromarray(after_img)
+    transTk = ImageTk.PhotoImage(image = after_img)
+    after_label.config(image=transTk)
+    after_label.image = transTk
 
+#콤보 박스 클릭을 통한 모자이크
 def pressMosaic(event):
     global path
     global dictionary
+    global after_img
     #콤보 박스에서 모자이클한 텍스트를 클릭한 경우
     mosaicImage = imageMosaic(dictionary[after_text_mosaic_combobox.get()], tempImage)
     after_img = cv2.resize(mosaicImage, (320,200))
@@ -97,10 +109,30 @@ def pressMosaic(event):
     #콤보 박스에서 가져온 텍스트 값이 잘 출력됩니다.
     #여기서 이제 다시 돌아가셔서 작업하면 됩니다.
 
+#얼굴 모자이크
+def pressFaceMosaic(event):
+    global path
+    global dictionary
+    global after_img
+    mosaicImage = profile_moszic(tempImage)
+    after_img = cv2.resize(mosaicImage, (320,200))
+    after_img = cv2.cvtColor(after_img, cv2.COLOR_RGB2BGR)
+    after_img = Image.fromarray(after_img)
+    transTk = ImageTk.PhotoImage(image = after_img)
+    after_label.config(image=transTk)
+    after_label.image = transTk
 
+#사진 저장
 def saveResult(event):
-    global after_src
-    cv2.imwrite("./images/result.jpg", after_src)  #사진 결과 저장
+    #tempImage가 결과이다.
+    #cv2.imwrite("./images/result.jpg", tempImage)  #사진 결과 저장
+    folder_selected = filedialog.askdirectory()
+    if folder_selected == "": # 사용자가 취소를 누를 때
+        print("폴더 선택 취소")
+        return
+    print(folder_selected)
+    path = folder_selected + "/" + "result.jpg"
+    cv2.imwrite(path, tempImage)
 
 
 #기본 세팅
@@ -150,6 +182,7 @@ img_upload_button.bind("<Button-1>", img_upload)
 text_find_button.bind("<Button-1>", findtext)
 img_save_button.bind("<Button-1>", saveResult)
 after_text_mosaic_combobox.bind("<<ComboboxSelected>>", pressMosaic)
+after_face_mosaic_button.bind("<Button-1>", pressFaceMosaic)
 
 
 #창 동작
